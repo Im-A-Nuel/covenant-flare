@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.local
+
+# contracts (Foundry)
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# web (Next.js)
+web/.next/
+web/out/
+
+# local Claude Code settings, not for sharing
+.claude/settings.local.json
