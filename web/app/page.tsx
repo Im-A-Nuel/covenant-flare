@@ -439,8 +439,8 @@ export default function Landing() {
               </div>
             </div>
             <div className="bcard reveal b-mint">
-              <h3>Revoke &amp; Expiry</h3>
-              <p>See at a glance whether a covenant is active, expired, depleted or revoked.</p>
+              <h3>Status at a Glance</h3>
+              <p>Every covenant's state -- active, depleted or expired -- computed live from CovenantVault, not a database.</p>
               <div className="stage">
                 <div className="decision" style={{ boxShadow: "0 14px 30px -22px rgba(0,0,0,.2)" }}>
                   <div className="arow-wrap">

@@ -14,6 +14,7 @@ import { createCovenantAndGetId } from "@/lib/flare/vault";
 import { explorerTx } from "@/lib/flare/chain";
 import { hashPurpose, type DisplayCovenant } from "@/lib/covenant-view";
 import { setPurposeLabel, setAgentLabel } from "@/lib/labels";
+import { shortAddr } from "@/lib/utils";
 import { WalletMenu } from "@/components/wallet-menu";
 import { useToast } from "@/components/ui/toast";
 
@@ -82,7 +83,7 @@ export default function NewCovenantPage() {
 
   function addRecipient() {
     const addr = recipientInput.trim();
-    if (!isAddress(addr)) {
+    if (!isAddress(addr, { strict: false })) {
       toast("Not a valid address", "error");
       return;
     }
@@ -108,7 +109,7 @@ export default function NewCovenantPage() {
       toast("Connect a wallet first", "error");
       return;
     }
-    if (!isAddress(agentAddr)) {
+    if (!isAddress(agentAddr, { strict: false })) {
       toast("Agent must be a valid address", "error");
       return;
     }
@@ -167,7 +168,7 @@ export default function NewCovenantPage() {
     id: "#preview",
     covenantId: 0n,
     owner: (account ?? "0x0000000000000000000000000000000000000000") as Address,
-    agent: (isAddress(agentAddr) ? agentAddr : "0x0000000000000000000000000000000000000000") as Address,
+    agent: (isAddress(agentAddr, { strict: false }) ? agentAddr : "0x0000000000000000000000000000000000000000") as Address,
     agentLabel: agentLabel || "Agent",
     totalBudgetUsd: budgetNum,
     remainingBudgetUsd: budgetNum,
@@ -322,10 +323,10 @@ export default function NewCovenantPage() {
                   </button>
                 </div>
                 {recipients.length > 0 && (
-                  <div className="svc" style={{ marginTop: 10 }}>
+                  <div className="chips" style={{ marginTop: 10, justifyContent: "flex-start" }}>
                     {recipients.map((r) => (
-                      <button key={r} className="opt on mono" onClick={() => removeRecipient(r)} title="Remove">
-                        {r} ✕
+                      <button key={r} className="chip chip-removable mono" onClick={() => removeRecipient(r)} title={`${r} -- click to remove`}>
+                        {shortAddr(r)} ✕
                       </button>
                     ))}
                   </div>
@@ -353,12 +354,12 @@ export default function NewCovenantPage() {
               <CovenantCard covenant={previewCovenant} priceWei={priceWei} dim={false} />
             </div>
 
-            <button type="button" className="preview-fab" onClick={() => setShowPreview(true)}>
+            <button type="button" className="preview-fab" aria-label="Live preview" onClick={() => setShowPreview(true)}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
                 <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" stroke="#fff" strokeWidth="1.7" strokeLinejoin="round" />
                 <circle cx="12" cy="12" r="2.6" stroke="#fff" strokeWidth="1.7" />
               </svg>
-              Live preview
+              <span>Live preview</span>
             </button>
             {showPreview && (
               <div className="preview-modal" onClick={() => setShowPreview(false)}>
