@@ -1,4 +1,4 @@
-import type { Address, Hex } from "viem";
+import { parseEventLogs, type Address, type Hex, type Log } from "viem";
 import { COVENANT_VAULT_ABI, CONTRACT_REGISTRY_ABI, ERC20_ABI } from "./abi";
 import { CONTRACT_REGISTRY_ADDRESS, REGISTRY_NAMES } from "./constants";
 import { publicClient, getWalletClient, type FlarePublicClient } from "./chain";
@@ -169,6 +169,30 @@ export async function createCovenant(owner: Address, agent: Address, policy: Pol
 }
 
 /**
+ * Submit createCovenant, wait for the receipt, and read the real covenantId
+ * back out of the CovenantCreated log -- reading nextCovenantId before the
+ * call would be racy if anything else creates a covenant in between.
+ */
+export async function createCovenantAndGetId(
+  owner: Address,
+  agent: Address,
+  policy: Policy,
+  client: FlarePublicClient = publicClient
+): Promise<{ txHash: Hex; covenantId: bigint }> {
+  const txHash = await createCovenant(owner, agent, policy);
+  const receipt = await client.waitForTransactionReceipt({ hash: txHash });
+  const vaultAddr = requireVaultAddress().toLowerCase();
+  const events = parseEventLogs({
+    abi: COVENANT_VAULT_ABI,
+    eventName: "CovenantCreated",
+    logs: (receipt.logs as Log[]).filter((l) => l.address.toLowerCase() === vaultAddr),
+  });
+  const covenantId = events[0]?.args.covenantId;
+  if (covenantId === undefined) throw new Error("CovenantCreated event not found in transaction receipt");
+  return { txHash, covenantId };
+}
+
+/**
  * Have the agent pay out of a covenant. Reverts on-chain (recipient not
  * allowed, over budget, expired, wrong caller) -- callers should catch and
  * surface `error.shortMessage` / the revert reason, this is the "reverted
@@ -201,6 +225,7 @@ export interface PaymentEvent {
   memo: string;
   transactionHash: Hex;
   blockNumber: bigint;
+  timestamp: number; // unix seconds, from the block -- for day-bucketing real spend, not fabricated
 }
 
 export async function getPaymentEvents(client: FlarePublicClient = publicClient): Promise<PaymentEvent[]> {
@@ -211,11 +236,23 @@ export async function getPaymentEvents(client: FlarePublicClient = publicClient)
     fromBlock: 0n,
     toBlock: "latest",
   });
+
+  const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
+  const blockTimestamps = new Map<bigint, number>(
+    await Promise.all(
+      uniqueBlocks.map(async (bn) => {
+        const block = await client.getBlock({ blockNumber: bn });
+        return [bn, Number(block.timestamp)] as const;
+      })
+    )
+  );
+
   return logs.map((log) => ({
     covenantId: log.args.covenantId!,
     recipient: log.args.recipient!,
     amountFXRP: log.args.amountFXRP!,
     usdCents: log.args.usdCents!,
+    timestamp: blockTimestamps.get(log.blockNumber) ?? 0,
     memo: Buffer.from((log.args.memo ?? "0x").slice(2), "hex").toString("utf8"),
     transactionHash: log.transactionHash,
     blockNumber: log.blockNumber,
