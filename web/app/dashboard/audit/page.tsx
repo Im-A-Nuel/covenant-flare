@@ -11,7 +11,7 @@ type Filter = "all" | "payment" | "covenant_created";
 
 export default function AuditPage() {
   const vaultDeployed = useVaultDeployed();
-  const { events, loading } = useAuditLog();
+  const { events, loading, error, refetch } = useAuditLog();
   const { toast } = useToast();
   const [filter, setFilter] = React.useState<Filter>("all");
   const [open, setOpen] = React.useState<Record<string, boolean>>({});
@@ -121,7 +121,17 @@ export default function AuditPage() {
           <span style={{ textAlign: "right" }}>Time</span>
         </div>
         <div>
-          {list.length === 0 ? (
+          {error ? (
+            <div style={{ padding: "32px 22px", fontSize: 13.5 }}>
+              <div style={{ color: "var(--block)", fontWeight: 600, marginBottom: 6 }}>
+                Could not load the on-chain event log.
+              </div>
+              <div style={{ color: "var(--muted)", marginBottom: 12 }}>{error}</div>
+              <button className="btn btn-ghost btn-sm" onClick={() => void refetch()}>
+                Retry
+              </button>
+            </div>
+          ) : list.length === 0 ? (
             <div style={{ padding: "32px 22px", color: "var(--muted)", fontSize: 13.5 }}>
               No events yet.
             </div>
@@ -143,7 +153,7 @@ export default function AuditPage() {
 
 function Row({ e, open, onToggle }: { e: AuditEvent; open: boolean; onToggle: () => void }) {
   const isPayment = e.kind === "payment";
-  const time = e.payment ? timeAgo(new Date(e.payment.timestamp * 1000).toISOString()) : "";
+  const time = e.timestamp ? timeAgo(new Date(e.timestamp * 1000).toISOString()) : "";
 
   return (
     <>

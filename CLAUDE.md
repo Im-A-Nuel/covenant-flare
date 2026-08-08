@@ -125,18 +125,58 @@ Encouraged (not required, but judges weigh it):
 
 Demo video (~3 min): create covenant, agent pays, agent blocked by policy, audit log.
 
+## Deployment (Coston2, chain id 114) -- live as of 2026-08-08
+```
+CovenantVault  0xA3CDA78226dF18Acc99AbeAd8d89Cf352d17F02c
+deploy tx      0xe72464244ddc361b8b45d13ee647cb67da5c9307a79cb4d6d07013c155f7040d
+owner/agent    0x22227781CCf9d1F547574E7Dec05FE56De6A0B25   (same key for both in the demo)
+FXRP token     0x0b6A3645c240605887a5532109323A3E12273dc7   (resolved on-chain, not hardcoded)
+```
+The two named tx hashes the submission requires, both real, both on Coston2:
+```
+APPROVED  0xdf4cf808bcdc1174713243ce38fefe7901bdc1e8ad32bf1fe58b0dc08b165cae
+          covenant #0, 0.242 FXRP (~$0.25) to an allowed recipient, status 0x1
+
+REVERTED  0x1dc18f3ed1240f37fb53b69b63a686c3ed3e91738a3d7bd076979a8b2f0a02f2
+          same covenant, 1 FXRP (~$1.03) against a $0.50 per-request cap,
+          status 0x0 -- reverted on-chain, spentUsdCents unchanged at 26
+```
+Covenant #0 policy: $3.00 budget, $0.50 per request, 1 day expiry, one allowed
+recipient (0x…dEaD). After the approved payment: spentUsdCents 26, owner vault
+balance 4,758,000 (5,000,000 deposited minus 242,000 paid). The 26 rather than
+25 is the ceiling rounding doing its job.
+
+`web/.env.local` carries `NEXT_PUBLIC_VAULT_ADDRESS` and is gitignored; set it
+in any new environment or every dashboard route falls back to its
+"not deployed yet" state.
+
+## Reading contract events: use the explorer, not eth_getLogs
+The public Coston2 RPC caps `eth_getLogs` at a **30 block** range (~54s of
+history), so scanning a contract's full event history over RPC is impossible.
+`getVaultEvents()` therefore reads the Coston2 Blockscout log API
+(`https://coston2-explorer.flare.network/api?module=logs&action=getLogs`),
+which returns full history plus each log's timestamp. That is still an index
+over the chain's own logs, not a database of ours, so the "audit log reads
+events, not a database" rule holds. Do not switch this back to
+`getContractEvents({ fromBlock: 0n })` -- it fails silently and the page just
+renders "No events yet".
+
 ## Current Focus (as of 2026-08-08, 6 days to deadline)
 Done: contracts (7/7 forge tests, FTSO mock), real Coston2 addresses resolved + verified on-chain, full frontend (landing, dashboard, covenants, console, audit, services, wizard), mobile-responsive, build clean.
 
-Critical path, in order -- everything else is polish:
-1. **Deploy CovenantVault to Coston2** (needs a funded deployer key in `contracts/.env`; blocked on that).
-2. **Run end-to-end once**: deposit -> createCovenant -> one approved `pay()` -> one reverted `pay()` (over `usdMaxPerRequest`). Capture both tx hashes. This also validates every run-flow animation, which has never actually executed.
-3. **Set `NEXT_PUBLIC_VAULT_ADDRESS`** in `web/.env.local` and re-verify the dashboard against real data.
-4. **Record the demo video.**
-5. **Write `docs/SUBMISSION.md` + `docs/ARCHITECTURE.md`.**
-6. Then, and only then: the Bounty 2 gate above, and x402 verification polish.
+Done since: contract audited and hardened (drain vectors closed, withdraw +
+revoke added, 33/33 tests), deployed to Coston2, end-to-end run completed with
+both demo tx hashes captured, audit log verified rendering real chain events.
 
-Known unverified: run-flow's 4-card animation sequence, CountUp on real numbers, skeleton loaders, toasts, wizard steps 2-4, and the wrong-network banner + connect CTA have all been written and type-check, but none has been seen running. `ConfirmProvider` is mounted but `useConfirm` is never called (dead code left from v1's revoke flow).
+Critical path, in order -- everything else is polish:
+1. **Drive the UI end-to-end in a browser with a real wallet**: create a covenant through the wizard, run the task console against covenant #0, revoke one. This is the last big unknown -- run-flow's animation sequence, wizard steps 2-4, toasts, CountUp on real numbers and the skeleton loaders have still never been seen executing.
+2. **Record the demo video.**
+3. **Write `docs/SUBMISSION.md` + `docs/ARCHITECTURE.md`.**
+4. Then, and only then: the Bounty 2 gate above, and x402 verification polish.
+
+Verified running: audit log against live events, connect-wallet CTAs, landing
+page, all mobile layouts. `ConfirmProvider` now has a caller (the revoke flow),
+so it is no longer dead code.
 
 Toolchain note: Foundry runs under WSL only (no native Windows build). Invoke as:
 `MSYS2_ARG_CONV_EXCL="*" wsl -d Ubuntu-Ext -- bash -lc "cd /mnt/f/Hack/flare/covenant/contracts && /home/imanuel/.foundry/bin/forge <cmd>"`

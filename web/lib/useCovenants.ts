@@ -4,8 +4,7 @@ import * as React from "react";
 import type { Address } from "viem";
 import {
   listCovenants,
-  getPaymentEvents,
-  getCovenantCreatedEvents,
+  getVaultEvents,
   VAULT_ADDRESS,
   type PaymentEvent,
   type CovenantCreatedEvent,
@@ -50,6 +49,7 @@ export interface AuditEvent {
   covenantId: bigint;
   transactionHash: string;
   blockNumber: bigint;
+  timestamp: number; // unix seconds, from the log itself
   payment?: PaymentEvent;
   created?: CovenantCreatedEvent;
 }
@@ -64,13 +64,14 @@ export function useAuditLog() {
     setLoading(true);
     setError(undefined);
     try {
-      const [payments, created] = await Promise.all([getPaymentEvents(), getCovenantCreatedEvents()]);
+      const { payments, created } = await getVaultEvents();
       const merged: AuditEvent[] = [
         ...payments.map((p) => ({
           kind: "payment" as const,
           covenantId: p.covenantId,
           transactionHash: p.transactionHash,
           blockNumber: p.blockNumber,
+          timestamp: p.timestamp,
           payment: p,
         })),
         ...created.map((c) => ({
@@ -78,6 +79,7 @@ export function useAuditLog() {
           covenantId: c.covenantId,
           transactionHash: c.transactionHash,
           blockNumber: c.blockNumber,
+          timestamp: c.timestamp,
           created: c,
         })),
       ].sort((a, b) => Number(b.blockNumber - a.blockNumber));

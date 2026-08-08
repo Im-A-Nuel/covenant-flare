@@ -1,4 +1,4 @@
-import { parseEventLogs, type Address, type Hex, type Log } from "viem";
+import { decodeEventLog, parseEventLogs, type Address, type Hex, type Log } from "viem";
 import { COVENANT_VAULT_ABI, CONTRACT_REGISTRY_ABI, ERC20_ABI } from "./abi";
 import { CONTRACT_REGISTRY_ADDRESS, REGISTRY_NAMES } from "./constants";
 import { publicClient, getWalletClient, type FlarePublicClient } from "./chain";
@@ -238,6 +238,70 @@ export async function payFromCovenant(
 }
 
 // ---- Audit trail: read straight from chain events, never from local/db state ----
+//
+// Sourced from the Coston2 explorer's log API rather than eth_getLogs. The
+// public Coston2 RPC caps eth_getLogs at a 30-block range (~54 seconds of
+// history at ~1.8s blocks), so scanning the chain for a contract's full event
+// history over RPC is not possible. The explorer is a public index over the
+// chain's own logs, not a database of ours, so the audit trail is still
+// derived entirely from on-chain events. Its response also carries each log's
+// block timestamp, which removes a per-block getBlock round trip.
+
+const EXPLORER_LOG_API = "https://coston2-explorer.flare.network/api";
+
+interface ExplorerLog {
+  address: string;
+  blockNumber: string; // hex
+  data: Hex;
+  logIndex: string; // hex
+  timeStamp: string; // hex, unix seconds
+  topics: (Hex | null)[];
+  transactionHash: Hex;
+}
+
+interface DecodedVaultLog {
+  eventName: string;
+  args: Record<string, unknown>;
+  transactionHash: Hex;
+  blockNumber: bigint;
+  timestamp: number;
+}
+
+async function fetchVaultLogs(): Promise<DecodedVaultLog[]> {
+  const address = requireVaultAddress();
+  const url = `${EXPLORER_LOG_API}?module=logs&action=getLogs&fromBlock=0&toBlock=latest&address=${address}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Explorer log API returned ${res.status}`);
+  const body = (await res.json()) as { message?: string; result?: ExplorerLog[] | string };
+
+  // Blockscout answers an empty history with a non-array result and a
+  // "No logs found" message; that is not an error.
+  if (!Array.isArray(body.result)) return [];
+
+  const decoded: DecodedVaultLog[] = [];
+  for (const log of body.result) {
+    const topics = log.topics.filter((t): t is Hex => t != null);
+    if (topics.length === 0) continue;
+    try {
+      const event = decodeEventLog({
+        abi: COVENANT_VAULT_ABI,
+        data: log.data,
+        topics: topics as [Hex, ...Hex[]],
+      });
+      decoded.push({
+        eventName: event.eventName as string,
+        args: event.args as unknown as Record<string, unknown>,
+        transactionHash: log.transactionHash,
+        blockNumber: BigInt(log.blockNumber),
+        timestamp: Number(BigInt(log.timeStamp)),
+      });
+    } catch {
+      // A log this ABI does not describe -- skip rather than fail the page.
+    }
+  }
+  return decoded;
+}
 
 export interface PaymentEvent {
   covenantId: bigint;
@@ -247,38 +311,7 @@ export interface PaymentEvent {
   memo: string;
   transactionHash: Hex;
   blockNumber: bigint;
-  timestamp: number; // unix seconds, from the block -- for day-bucketing real spend, not fabricated
-}
-
-export async function getPaymentEvents(client: FlarePublicClient = publicClient): Promise<PaymentEvent[]> {
-  const logs = await client.getContractEvents({
-    address: requireVaultAddress(),
-    abi: COVENANT_VAULT_ABI,
-    eventName: "PaymentExecuted",
-    fromBlock: 0n,
-    toBlock: "latest",
-  });
-
-  const uniqueBlocks = [...new Set(logs.map((l) => l.blockNumber))];
-  const blockTimestamps = new Map<bigint, number>(
-    await Promise.all(
-      uniqueBlocks.map(async (bn) => {
-        const block = await client.getBlock({ blockNumber: bn });
-        return [bn, Number(block.timestamp)] as const;
-      })
-    )
-  );
-
-  return logs.map((log) => ({
-    covenantId: log.args.covenantId!,
-    recipient: log.args.recipient!,
-    amountFXRP: log.args.amountFXRP!,
-    usdCents: log.args.usdCents!,
-    timestamp: blockTimestamps.get(log.blockNumber) ?? 0,
-    memo: Buffer.from((log.args.memo ?? "0x").slice(2), "hex").toString("utf8"),
-    transactionHash: log.transactionHash,
-    blockNumber: log.blockNumber,
-  }));
+  timestamp: number; // unix seconds, straight off the chain -- never fabricated
 }
 
 export interface CovenantCreatedEvent {
@@ -287,21 +320,51 @@ export interface CovenantCreatedEvent {
   agent: Address;
   transactionHash: Hex;
   blockNumber: bigint;
+  timestamp: number;
 }
 
-export async function getCovenantCreatedEvents(client: FlarePublicClient = publicClient): Promise<CovenantCreatedEvent[]> {
-  const logs = await client.getContractEvents({
-    address: requireVaultAddress(),
-    abi: COVENANT_VAULT_ABI,
-    eventName: "CovenantCreated",
-    fromBlock: 0n,
-    toBlock: "latest",
-  });
-  return logs.map((log) => ({
-    covenantId: log.args.covenantId!,
-    owner: log.args.owner!,
-    agent: log.args.agent!,
-    transactionHash: log.transactionHash,
-    blockNumber: log.blockNumber,
-  }));
+/** One fetch, both event types -- the audit page needs them together. */
+export async function getVaultEvents(): Promise<{
+  payments: PaymentEvent[];
+  created: CovenantCreatedEvent[];
+}> {
+  const logs = await fetchVaultLogs();
+  const payments: PaymentEvent[] = [];
+  const created: CovenantCreatedEvent[] = [];
+
+  for (const log of logs) {
+    if (log.eventName === "PaymentExecuted") {
+      const memoHex = (log.args.memo as Hex | undefined) ?? "0x";
+      payments.push({
+        covenantId: log.args.covenantId as bigint,
+        recipient: log.args.recipient as Address,
+        amountFXRP: log.args.amountFXRP as bigint,
+        usdCents: log.args.usdCents as bigint,
+        memo: hexToUtf8(memoHex),
+        transactionHash: log.transactionHash,
+        blockNumber: log.blockNumber,
+        timestamp: log.timestamp,
+      });
+    } else if (log.eventName === "CovenantCreated") {
+      created.push({
+        covenantId: log.args.covenantId as bigint,
+        owner: log.args.owner as Address,
+        agent: log.args.agent as Address,
+        transactionHash: log.transactionHash,
+        blockNumber: log.blockNumber,
+        timestamp: log.timestamp,
+      });
+    }
+  }
+
+  return { payments, created };
+}
+
+function hexToUtf8(hex: Hex): string {
+  try {
+    const bytes = hex.slice(2).match(/.{1,2}/g) ?? [];
+    return new TextDecoder().decode(Uint8Array.from(bytes.map((b) => parseInt(b, 16))));
+  } catch {
+    return "";
+  }
 }
