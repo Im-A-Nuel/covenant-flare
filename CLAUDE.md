@@ -165,18 +165,32 @@ renders "No events yet".
 Done: contracts (7/7 forge tests, FTSO mock), real Coston2 addresses resolved + verified on-chain, full frontend (landing, dashboard, covenants, console, audit, services, wizard), mobile-responsive, build clean.
 
 Done since: contract audited and hardened (drain vectors closed, withdraw +
-revoke added, 33/33 tests), deployed to Coston2, end-to-end run completed with
-both demo tx hashes captured, audit log verified rendering real chain events.
+revoke added, 33/33 tests), deployed to Coston2, audit log verified rendering
+real chain events, and **the whole wizard driven end-to-end in a browser with a
+real wallet** -- covenant #1 created, agent paid, all four steps rendered.
+
+Covenant #1 (created through the UI, not the CLI):
+```
+create tx  0x3a96ecd8...
+pay tx     0x059acc69...d310aa   0.24 FXRP ($0.25) to 0x...dEaD
+on-chain   spentUsdCents 25, remaining $2.75 -- matches what the UI shows
+```
 
 Critical path, in order -- everything else is polish:
-1. **Drive the UI end-to-end in a browser with a real wallet**: create a covenant through the wizard, run the task console against covenant #0, revoke one. This is the last big unknown -- run-flow's animation sequence, wizard steps 2-4, toasts, CountUp on real numbers and the skeleton loaders have still never been seen executing.
+1. **Host the app publicly** (Vercel). The rules require a demo link / working app link; localhost does not count.
 2. **Record the demo video.**
-3. **Write `docs/SUBMISSION.md` + `docs/ARCHITECTURE.md`.**
-4. Then, and only then: the Bounty 2 gate above, and x402 verification polish.
+3. **Write `README.md`, `docs/SUBMISSION.md`, `docs/ARCHITECTURE.md`.** The repo currently has no README at all, which is the first thing a judge sees.
+4. Then, and only then: the Bounty 2 gate above, fuzz/invariant tests, and x402 verification polish.
 
-Verified running: audit log against live events, connect-wallet CTAs, landing
-page, all mobile layouts. `ConfirmProvider` now has a caller (the revoke flow),
-so it is no longer dead code.
+Verified running end-to-end: wizard steps 1-4, run-flow's four-card sequence,
+policy preview, real pay() settlement, audit log against live events,
+connect-wallet CTAs, landing page, all mobile layouts. `ConfirmProvider` now has
+a caller (the revoke flow), so it is no longer dead code.
+
+Still never exercised: `withdraw()` and `revokeCovenant()` from the UI (both are
+tested on-chain by forge, and revoke is wired to a button, but neither has been
+clicked in a browser); the wrong-network banner; CountUp/skeletons on a
+populated dashboard.
 
 Toolchain note: Foundry runs under WSL only (no native Windows build). Invoke as:
 `MSYS2_ARG_CONV_EXCL="*" wsl -d Ubuntu-Ext -- bash -lc "cd /mnt/f/Hack/flare/covenant/contracts && /home/imanuel/.foundry/bin/forge <cmd>"`

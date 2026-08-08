@@ -9,7 +9,7 @@ import { useCovenants, useFtsoPrice, useVaultDeployed } from "@/lib/useCovenants
 import { RunFlow, type RunResult } from "@/components/run-flow";
 import { IconCoin, IconLimit, IconClock, IconTarget, IconCheck } from "@/components/icons";
 import { expiryLabel, type DisplayCovenant } from "@/lib/covenant-view";
-import { shortAddr } from "@/lib/utils";
+import { shortAddr, cleanReport } from "@/lib/utils";
 
 const DEFAULT_TASK =
   "Analyze whether ETH has short-term risk. Use paid data only if free data is insufficient. Do not spend more than the covenant's per-request limit.";
@@ -214,7 +214,7 @@ function ConsolePage() {
                   <div className="rsub">{result.blocked ? result.blockReason : `Remaining budget $${result.remainingUsd.toFixed(2)}`}</div>
                 </div>
               </div>
-              {result.report && <div className="verdict-report">{result.report}</div>}
+              {result.report && <div className="verdict-report">{cleanReport(result.report)}</div>}
             </div>
           )}
           {done && (

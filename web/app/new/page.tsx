@@ -14,7 +14,7 @@ import { createCovenantAndGetId } from "@/lib/flare/vault";
 import { explorerTx } from "@/lib/flare/chain";
 import { hashPurpose, type DisplayCovenant } from "@/lib/covenant-view";
 import { setPurposeLabel, setAgentLabel } from "@/lib/labels";
-import { shortAddr } from "@/lib/utils";
+import { shortAddr, cleanReport } from "@/lib/utils";
 import { WalletMenu } from "@/components/wallet-menu";
 import { NetworkBanner } from "@/components/network-banner";
 import { useToast } from "@/components/ui/toast";
@@ -478,7 +478,7 @@ export default function NewCovenantPage() {
                     CovenantVault <b>reverted</b> the transaction: {runResult.blockReason}. No FXRP moved.
                   </p>
                 ) : runResult?.report ? (
-                  <div className="verdict-report">{runResult.report}</div>
+                  <div className="verdict-report">{cleanReport(runResult.report)}</div>
                 ) : (
                   <p className="verdict display">Task in progress…</p>
                 )}
