@@ -462,6 +462,16 @@ h1.ph{font-size:38px;margin:0 0 8px;}
 .note-card .ni{width:36px;height:36px;border-radius:10px;background:rgba(39,117,202,.1);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
 .note-card p{margin:0;font-size:14px;color:var(--ink-2);line-height:1.6;max-width:74ch;}
 .note-card b{font-weight:600;color:var(--ink);}
+.network-banner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(176,137,0,.1);border:1px solid rgba(176,137,0,.3);color:var(--ink);
+  border-radius:14px;padding:12px 16px;margin-bottom:22px;font-size:13.5px;}
+.network-banner b{font-weight:700;}
+.network-banner-btn{flex:0 0 auto;background:var(--ink);color:#fff;border:none;border-radius:9px;
+  padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+.network-banner-btn:hover{opacity:.9;}
+.connect-cta{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border:none;
+  border-radius:11px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;margin-top:14px;}
+.connect-cta:hover{opacity:.92;}
 
 /* ============================================================
    WIZARD (/new): step sidebar + builder + run + audit

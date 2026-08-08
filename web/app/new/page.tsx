@@ -16,6 +16,7 @@ import { hashPurpose, type DisplayCovenant } from "@/lib/covenant-view";
 import { setPurposeLabel, setAgentLabel } from "@/lib/labels";
 import { shortAddr } from "@/lib/utils";
 import { WalletMenu } from "@/components/wallet-menu";
+import { NetworkBanner } from "@/components/network-banner";
 import { useToast } from "@/components/ui/toast";
 
 const STEPS = [
@@ -255,6 +256,7 @@ export default function NewCovenantPage() {
 
       {/* ============ MAIN ============ */}
       <main className="main">
+        <NetworkBanner />
         {/* ---------- STEP 1: BUILDER ---------- */}
         <section className={panelClass(0)}>
           <div className="page-head">

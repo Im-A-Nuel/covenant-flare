@@ -353,12 +353,16 @@ function VaultNotDeployed() {
 }
 
 function ConnectWalletPrompt() {
+  const { connect, connecting } = useWallet();
   return (
     <div className="page-head">
       <div className="ph-l">
         <div className="crumb">Workspace</div>
         <h1 className="display ph">Connect a wallet</h1>
         <p>Connect your wallet to see your covenants, read directly from CovenantVault on Coston2.</p>
+        <button className="connect-cta" onClick={() => void connect()} disabled={connecting}>
+          {connecting ? "Connecting…" : "Connect Wallet"}
+        </button>
       </div>
     </div>
   );

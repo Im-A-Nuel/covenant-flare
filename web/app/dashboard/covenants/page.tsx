@@ -19,7 +19,7 @@ const TABS: [Filter, string][] = [
 ];
 
 export default function CovenantsPage() {
-  const { account } = useWallet();
+  const { account, connect, connecting } = useWallet();
   const vaultDeployed = useVaultDeployed();
   const { covenants, loading } = useCovenants(account);
   const { priceWei } = useFtsoPrice();
@@ -46,6 +46,9 @@ export default function CovenantsPage() {
           <div className="crumb">Manage</div>
           <h1 className="display ph">Covenants</h1>
           <p>Connect your wallet to see the covenants you&apos;ve created.</p>
+          <button className="connect-cta" onClick={() => void connect()} disabled={connecting}>
+            {connecting ? "Connecting…" : "Connect Wallet"}
+          </button>
         </div>
       </div>
     );

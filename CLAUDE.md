@@ -3,7 +3,10 @@
 ## Project
 Covenant on Flare -- policy-bound payment vault for autonomous AI agents, settled in FXRP, enforced on Flare.
 
-Hackathon: Flare Summer Signal (DoraHacks). Deadline: ~Aug 9-10, 2026. Solo dev. Bounties targeted: Interoperable Assets + Confidential Compute.
+Hackathon: Flare Summer Signal (DoraHacks). Solo dev.
+- Final submission deadline: **Aug 14, 2026**. Judging Aug 15-21. Winners Aug 24.
+- **Primary target: Bounty 1 (Interoperable Asset Products, $4k/$2k).** FXRP + FAssets are their stated priority area, and our FTSO-inside-pay() is a deep integration, not a bolt-on.
+- **Bounty 2 (Confidential Compute, $4k/$2k): conditional, decide only after Bounty 1 fully ships.** Do not split focus before then. See "Bounty 2 decision gate" below.
 
 Narrative (keep consistent everywhere): Covenant v1 proved the concept on Base Sepolia but its policy firewall ran off-chain (trust gap). This version rebuilds enforcement on Flare: budgets denominated in USD via FTSO, settlement in FXRP, policy evaluation designed for Flare Confidential Compute.
 
@@ -79,8 +82,10 @@ covenant-flare/
 ## Architecture Notes
 - FTSO price check happens INSIDE `pay()` on-chain. This is the core Flare integration; do not move it off-chain.
 - UI must show dual denomination on the covenant card: `$3.00 (2.1 FXRP via FTSO)`. That one line proves FTSO usage to judges.
-- FCC (Confidential Compute): treat as design-first. `docs/ARCHITECTURE.md` gets a full section on running PolicyLib evaluation inside an FCC TEE (private allowlists, hidden per-vendor limits). Implement only if Songbird FCC access is confirmed by Day 2; otherwise it ships as roadmap with architecture diagrams.
-- x402 flow kept from v1: agent hits paid endpoint, gets HTTP 402, then calls `pay()` on the vault instead of redeeming a delegation. Server verifies the FXRP transfer on Coston2.
+- FCC (Confidential Compute): `docs/ARCHITECTURE.md` gets a section on running PolicyLib evaluation inside an FCC TEE (private allowlists, hidden per-vendor limits). Ships as roadmap unless the Bounty 2 decision gate below is passed.
+- x402 flow kept from v1: agent hits paid endpoint, gets HTTP 402, then calls `pay()` on the vault instead of redeeming a delegation.
+  - **Current honest status (do not overclaim in submission copy):** the 402 handshake is real (correct envelope, `X-PAYMENT` header, 402 -> pay -> 200). But the demo server does NOT verify the payment on-chain -- any non-empty `X-PAYMENT` header unlocks the resource. Also, the envelope's `payTo` is ignored; the real transfer goes to the covenant's `allowedRecipients[0]`, since on-chain policy only permits those.
+  - Fix these before submission if time allows (verify the tx against `PaymentExecuted` on Coston2; source the envelope `payTo` from the covenant). Note: x402 is NOT part of either bounty's judging criteria, so this is polish, not critical path.
 - Demo script must show BOTH outcomes with tx links: one approved payment, one reverted (over usdMaxPerRequest).
 
 ## Do NOT
@@ -91,11 +96,47 @@ covenant-flare/
 - Do not install new heavy dependencies without asking (anything beyond viem/wagmi/foundry stack).
 - Do not claim "trustless" in copy unless the specific check named is on-chain.
 
-## Submission Checklist (docs/SUBMISSION.md mirrors DoraHacks requirements)
-- Deployed CovenantVault address on Coston2 + 2 named tx hashes (1 approved, 1 reverted).
-- 3-min demo video: create covenant, agent pays, agent blocked, audit log.
-- "What existed before vs built during program" section: be explicit, v1 UI/concept reused, entire contract + FTSO + FXRP layer new.
-- Roadmap: FCC policy evaluation on Songbird, PMW for native XRPL payouts, agent SDK.
+## Bounty 2 decision gate (Confidential Compute)
+Do NOT start FCC work until Bounty 1 is fully shipped (deployed + demo video + SUBMISSION.md). Then enter only if BOTH hold:
+1. Indexer credentials have arrived from Flare support, AND
+2. At least 3 days remain before Aug 14.
 
-## Current Focus
-Day 1-2: scaffold repo, CovenantVault.sol + PolicyLib + forge tests with FTSO mock, resolve real Coston2 addresses, deploy. Verify FCC/Songbird access in parallel and record the answer in ARCHITECTURE.md.
+Researched facts (verified against dev.flare.network on 2026-08-08, so no need to re-research):
+- FCC deploys to **Coston2** -- the same network the vault is on.
+- **`SIMULATED_TEE=true`** enables local development against live Coston2 without Confidential VM hardware. Honest framing required if used: it is a simulated code hash, not a real attested TEE.
+- Requires: Docker + Docker Compose, a Go HTTP server, Forge, an HTTPS tunnel (ngrok/cloudflared), and **indexer database credentials obtained by contacting Flare support** -- this is the long-pole external dependency, request it early even if unsure.
+- ~8 steps: configure env, tunnel, indexer DB, deploy contract, start services, verify proxy, register TEE machine, e2e test.
+- Official status: "in the final stages of development and is not yet a fully public production system."
+- Bounty 2 judges want: what runs privately inside the TEE, what is verified/consumed on-chain, trust assumptions, and why TEE beats plain smart-contract execution. A design doc alone will score poorly against a bounty whose verb is "Build".
+
+## Submission Checklist (docs/SUBMISSION.md mirrors the official requirements)
+Required by the rules:
+- Project name; selected bounty/bounties; short product description; target user.
+- Demo link, video, or working app link.
+- GitHub repo / technical materials.
+- How the project uses Flare.
+- What was newly built vs ported/integrated/improved during the program: be explicit -- v1 UI/concept reused, entire contract + FTSO + FXRP layer new.
+- Smart contract addresses / deployment details: deployed CovenantVault address on Coston2 + 2 named tx hashes (1 approved, 1 reverted).
+- Short roadmap / next steps: FCC policy evaluation, PMW for native XRPL payouts, agent SDK.
+
+Encouraged (not required, but judges weigh it):
+- Which network it is deployed on (Coston2 for us).
+- Any user acquisition, testing, real feedback, or traction signals.
+
+Demo video (~3 min): create covenant, agent pays, agent blocked by policy, audit log.
+
+## Current Focus (as of 2026-08-08, 6 days to deadline)
+Done: contracts (7/7 forge tests, FTSO mock), real Coston2 addresses resolved + verified on-chain, full frontend (landing, dashboard, covenants, console, audit, services, wizard), mobile-responsive, build clean.
+
+Critical path, in order -- everything else is polish:
+1. **Deploy CovenantVault to Coston2** (needs a funded deployer key in `contracts/.env`; blocked on that).
+2. **Run end-to-end once**: deposit -> createCovenant -> one approved `pay()` -> one reverted `pay()` (over `usdMaxPerRequest`). Capture both tx hashes. This also validates every run-flow animation, which has never actually executed.
+3. **Set `NEXT_PUBLIC_VAULT_ADDRESS`** in `web/.env.local` and re-verify the dashboard against real data.
+4. **Record the demo video.**
+5. **Write `docs/SUBMISSION.md` + `docs/ARCHITECTURE.md`.**
+6. Then, and only then: the Bounty 2 gate above, and x402 verification polish.
+
+Known unverified: run-flow's 4-card animation sequence, CountUp on real numbers, skeleton loaders, toasts, wizard steps 2-4, and the wrong-network banner + connect CTA have all been written and type-check, but none has been seen running. `ConfirmProvider` is mounted but `useConfirm` is never called (dead code left from v1's revoke flow).
+
+Toolchain note: Foundry runs under WSL only (no native Windows build). Invoke as:
+`MSYS2_ARG_CONV_EXCL="*" wsl -d Ubuntu-Ext -- bash -lc "cd /mnt/f/Hack/flare/covenant/contracts && /home/imanuel/.foundry/bin/forge <cmd>"`

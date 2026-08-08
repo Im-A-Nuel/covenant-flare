@@ -18,7 +18,7 @@ const EXAMPLES = ["Summarize today's ETH sentiment", "Compare BTC vs ETH volatil
 
 function ConsolePage() {
   const searchParams = useSearchParams();
-  const { account } = useWallet();
+  const { account, connect, connecting } = useWallet();
   const vaultDeployed = useVaultDeployed();
   const { covenants } = useCovenants(account);
   const { priceWei } = useFtsoPrice();
@@ -91,6 +91,9 @@ function ConsolePage() {
           <div className="crumb">Run</div>
           <h1 className="display ph">Task Console</h1>
           <p>Connect your wallet to pick a covenant and run a task.</p>
+          <button className="connect-cta" onClick={() => void connect()} disabled={connecting}>
+            {connecting ? "Connecting…" : "Connect Wallet"}
+          </button>
         </div>
       </div>
     );
