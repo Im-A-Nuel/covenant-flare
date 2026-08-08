@@ -103,10 +103,10 @@ const fly: Fly[] = [
 ];
 
 const FAQ_ITEMS: [string, string][] = [
-  ["Does Covenant hold or custody my funds?", "Your FXRP sits in the CovenantVault contract you deposited into, an on-chain vault, not us. Every payment out of it is checked against your policy inside the contract itself, on Flare, before it can execute."],
+  ["Does Covenant hold or custody my funds?", "Your FXRP sits in the CovenantVault contract you deposited into, an on-chain vault, not us. Every payment out of it is checked against your policy inside the contract itself, on Flare, before it can execute, and you can withdraw whatever has not been spent at any time."],
   ["What exactly can an agent spend on?", "Only what your covenant allows: the recipients you list, under the total budget and per-request limits you set, and only until the covenant's expiry. Everything else reverts on-chain."],
   ["What happens when a payment breaks the policy?", "The CovenantVault contract reverts the transaction before any FXRP moves, with the failing check named in the revert reason. There's no off-chain step to bypass."],
-  ["Can I revoke a covenant or change the budget?", "Not yet. A covenant runs until its budget is spent or its expiry timestamp passes. Revocation and budget top-ups are on the roadmap."],
+  ["Can I revoke a covenant or change the budget?", "You can revoke at any time: one on-chain call ends the agent's authority immediately, and any unspent FXRP can be withdrawn back to your wallet. A covenant also ends on its own once the budget is spent or the expiry passes. Editing a live covenant's budget is not supported; revoke it and create a new one."],
   ["Which chains and standards does it use?", "Covenant runs on Flare. Budgets are denominated in USD and priced live via FTSO v2, settlement is in FXRP via FAssets, and x402 handles the paid-service handshake. Policy evaluation is designed to run inside Flare Confidential Compute (FCC) on Songbird, shipping as a roadmap item."],
   ["Do I need real funds to try it?", "No. Covenant runs on Flare's Coston2 testnet. Get C2FLR gas and testnet FXRP from the Coston2 faucet, connect a wallet, and every payment either executes on-chain with a real FTSO price check or reverts with a clear reason."],
 ];

@@ -149,6 +149,28 @@ export async function depositFxrp(owner: Address, amountFXRP: bigint): Promise<H
   });
 }
 
+/** Pull unspent FXRP back out of the vault. Owners keep custody throughout. */
+export async function withdrawFxrp(owner: Address, amountFXRP: bigint): Promise<Hex> {
+  const walletClient = getWalletClient(owner);
+  return walletClient.writeContract({
+    address: requireVaultAddress(),
+    abi: COVENANT_VAULT_ABI,
+    functionName: "withdraw",
+    args: [amountFXRP],
+  });
+}
+
+/** Owner kill switch: ends the agent's authority immediately. */
+export async function revokeCovenant(owner: Address, covenantId: bigint): Promise<Hex> {
+  const walletClient = getWalletClient(owner);
+  return walletClient.writeContract({
+    address: requireVaultAddress(),
+    abi: COVENANT_VAULT_ABI,
+    functionName: "revokeCovenant",
+    args: [covenantId],
+  });
+}
+
 export async function createCovenant(owner: Address, agent: Address, policy: Policy): Promise<Hex> {
   const walletClient = getWalletClient(owner);
   return walletClient.writeContract({

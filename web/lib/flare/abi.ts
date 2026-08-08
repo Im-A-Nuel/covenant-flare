@@ -64,6 +64,34 @@ export const COVENANT_VAULT_ABI = [
   },
   {
     type: "function",
+    name: "withdraw",
+    inputs: [{ name: "amountFXRP", type: "uint256", internalType: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "revokeCovenant",
+    inputs: [{ name: "covenantId", type: "uint256", internalType: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "MAX_PRICE_AGE",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "MAX_ALLOWED_RECIPIENTS",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
     name: "fxrpToken",
     inputs: [],
     outputs: [{ name: "", type: "address", internalType: "contract IERC20" }],
@@ -104,6 +132,24 @@ export const COVENANT_VAULT_ABI = [
     inputs: [
       { name: "owner", type: "address", indexed: true, internalType: "address" },
       { name: "amountFXRP", type: "uint256", indexed: false, internalType: "uint256" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "Withdrawn",
+    inputs: [
+      { name: "owner", type: "address", indexed: true, internalType: "address" },
+      { name: "amountFXRP", type: "uint256", indexed: false, internalType: "uint256" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "CovenantRevoked",
+    inputs: [
+      { name: "covenantId", type: "uint256", indexed: true, internalType: "uint256" },
+      { name: "owner", type: "address", indexed: true, internalType: "address" },
     ],
     anonymous: false,
   },

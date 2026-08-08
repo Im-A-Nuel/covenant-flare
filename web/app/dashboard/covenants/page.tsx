@@ -6,7 +6,10 @@ import { CovenantCard } from "@/components/covenant-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWallet } from "@/lib/wallet";
 import { useCovenants, useFtsoPrice, useVaultDeployed } from "@/lib/useCovenants";
-import type { CovenantStatus } from "@/lib/covenant-view";
+import { revokeCovenant } from "@/lib/flare/vault";
+import { useConfirm } from "@/components/ui/confirm";
+import { useToast } from "@/components/ui/toast";
+import type { CovenantStatus, DisplayCovenant } from "@/lib/covenant-view";
 
 type Filter = "all" | CovenantStatus;
 
@@ -21,9 +24,34 @@ const TABS: [Filter, string][] = [
 export default function CovenantsPage() {
   const { account, connect, connecting } = useWallet();
   const vaultDeployed = useVaultDeployed();
-  const { covenants, loading } = useCovenants(account);
+  const { covenants, loading, refetch } = useCovenants(account);
   const { priceWei } = useFtsoPrice();
   const [filter, setFilter] = React.useState<Filter>("all");
+  const [revoking, setRevoking] = React.useState<string | null>(null);
+  const confirm = useConfirm();
+  const { toast } = useToast();
+
+  async function handleRevoke(c: DisplayCovenant) {
+    const ok = await confirm({
+      title: `Revoke covenant ${c.id}?`,
+      body: `${c.agentLabel} loses the ability to pay immediately. This is an on-chain transaction and cannot be undone -- you would need to create a new covenant. Unspent FXRP stays in the vault and can be withdrawn.`,
+      confirmLabel: "Revoke covenant",
+      danger: true,
+    });
+    if (!ok || !account) return;
+
+    setRevoking(c.id);
+    try {
+      await revokeCovenant(account, c.covenantId);
+      toast(`Covenant ${c.id} revoked`);
+      await refetch();
+    } catch (e) {
+      const err = e as { shortMessage?: string; message?: string };
+      toast(err.shortMessage || err.message || "Revoke failed", "error");
+    } finally {
+      setRevoking(null);
+    }
+  }
 
   if (!vaultDeployed) {
     return (
@@ -114,14 +142,13 @@ export default function CovenantsPage() {
                       <Link className="btn btn-ghost btn-sm" href={`/dashboard/console?cov=${c.covenantId}`}>
                         Assign task
                       </Link>
-                      <a
-                        className="btn btn-ghost btn-sm"
-                        href={`https://coston2-explorer.flare.network/address/${c.owner}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        className="btn btn-danger"
+                        disabled={revoking === c.id}
+                        onClick={() => void handleRevoke(c)}
                       >
-                        View owner
-                      </a>
+                        {revoking === c.id ? "Revoking…" : "Revoke"}
+                      </button>
                     </>
                   ) : (
                     <button className="btn btn-ghost btn-sm" style={{ flex: 1 }} disabled>
