@@ -1077,6 +1077,17 @@ body.intro-lock{overflow:hidden;}
 @media(max-width:980px){
   .landing .wrap{padding:0 22px;}
   .landing .hero-grid,.landing .sec-head,.landing .reserve-grid,.landing .bento,.landing .foot-grid{grid-template-columns:1fr;}
+  /* Mobile hero order: badge, then the covenant card as immediate proof,
+     then the pitch text. display:contents lifts hero-copy's children into
+     hero-grid's own layout so they can be reordered against hero-visual,
+     a sibling, without touching the DOM or the desktop two-column layout. */
+  .landing .hero-copy{display:contents;}
+  .landing .hero-copy .badge{order:1;}
+  .landing .hero-visual{order:2;}
+  .landing .hero-copy h1.hero-h{order:3;}
+  .landing .hero-copy .hero-sub{order:4;}
+  .landing .hero-copy .hero-cta{order:5;}
+  .landing .hero-copy .proof{order:6;}
   .landing .why-cards{grid-template-columns:1fr;}
   .landing h1.hero-h{font-size:46px;} .landing h2.sec-h,.landing .feat h2,.landing .reserve-grid h2{font-size:34px;} .landing .cta h2{font-size:36px;}
   .landing nav.links,.landing .nav-div{display:none;}
