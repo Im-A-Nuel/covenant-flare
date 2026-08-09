@@ -867,8 +867,12 @@ h1.ph{font-size:38px;margin:0 0 8px;}
 .landing .coin{position:absolute;top:50%;width:30px;height:30px;border-radius:50%;background:#2775ca;color:#fff;
   font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;
   transform:translateY(-50%);box-shadow:0 6px 14px -6px rgba(39,117,202,.7);animation:coinmove 3.4s ease-in-out infinite;}
-.landing .tick2{position:absolute;left:50%;top:8px;transform:translateX(-50%) scale(0);z-index:4;
-  width:26px;height:26px;border-radius:50%;background:#2f8f5b;color:#fff;
+/* Sits as a corner badge on the coin at the gate rather than stamped
+   directly on top of it: offset up-right from the coin's paused position
+   (coinmove holds left:42% from 42%-56%, track2 is 64px tall so the coin's
+   vertical centre is 32px) so the "$" stays legible while it pops in. */
+.landing .tick2{position:absolute;left:calc(42% + 20px);top:14px;transform:translateX(-50%) scale(0);z-index:4;
+  width:20px;height:20px;border-radius:50%;background:#2f8f5b;color:#fff;border:2px solid #eaf4ee;
   display:flex;align-items:center;justify-content:center;animation:tickpop 3.4s ease-in-out infinite;}
 
 /* FX3: audit log appends itself */
