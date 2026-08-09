@@ -1082,7 +1082,10 @@ body.intro-lock{overflow:hidden;}
      hero-grid's own layout so they can be reordered against hero-visual,
      a sibling, without touching the DOM or the desktop two-column layout. */
   .landing .hero-copy{display:contents;}
-  .landing .hero-copy .badge{order:1;}
+  /* badge is now a direct grid item, so hero-grid's own gap spaces it from
+     the card; its old margin-bottom (meant for the heading that used to
+     follow it in normal flow) would otherwise stack on top of that gap. */
+  .landing .hero-copy .badge{order:1;margin-bottom:0;}
   .landing .hero-visual{order:2;}
   .landing .hero-copy h1.hero-h{order:3;}
   .landing .hero-copy .hero-sub{order:4;}
@@ -1110,6 +1113,12 @@ body.intro-lock{overflow:hidden;}
   .landing .hero-cta .btn{width:100%;}
   .landing .hero-visual{flex-direction:column;align-items:center;}
   .landing .cov-card{max-width:340px;}
+  /* the dual-denomination line ("Budget remaining $2.75 / $3.00 (2.64 FXRP
+     via FTSO)") is the one line that proves FTSO is used, and it does not
+     fit the 340px card on one line at this width. The base .budget-top rule
+     forces nowrap for the desktop-width card; let it wrap here instead of
+     clipping against .cov-card's overflow:hidden. */
+  .landing .budget-top{white-space:normal;flex-wrap:wrap;row-gap:2px;}
   .landing .hero-visual .cov-agent{font-size:23px;}
   .landing .float-card{position:static;left:auto;bottom:auto;width:100%;margin-top:14px;}
   .landing .sec{padding:56px 0;}
