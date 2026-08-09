@@ -1098,14 +1098,25 @@ body.intro-lock{overflow:hidden;}
      hero-grid's own layout so they can be reordered against hero-visual,
      a sibling, without touching the DOM or the desktop two-column layout. */
   .landing .hero-copy{display:contents;}
+  /* hero-grid's 56px gap was written for the desktop two-column split
+     (copy column vs card column), not for spacing between stacked lines of
+     text. On mobile it's now also the vertical gap between every reordered
+     item, so it needs to be a text-appropriate value, not the desktop one. */
+  .landing .hero-grid{gap:24px;}
   /* badge is now a direct grid item, so hero-grid's own gap spaces it from
      the card; its old margin-bottom (meant for the heading that used to
      follow it in normal flow) would otherwise stack on top of that gap. */
   .landing .hero-copy .badge{order:1;margin-bottom:0;}
   .landing .hero-visual{order:2;}
-  .landing .hero-copy h1.hero-h{order:3;}
-  .landing .hero-copy .hero-sub{order:4;}
-  .landing .hero-copy .hero-cta{order:5;}
+  /* Same stacking bug for every other child: each one's own margin-bottom
+     (24px, 34px, 24px) was written for normal block flow, where it was the
+     only thing spacing it from the next element. Now that display:contents
+     makes them direct grid items too, hero-grid's 56px gap adds on top of
+     each -- heading-to-subtitle became 80px, subtitle-to-CTA became 90px.
+     Zero them all; the grid gap alone is the correct spacing now. */
+  .landing .hero-copy h1.hero-h{order:3;margin-bottom:0;}
+  .landing .hero-copy .hero-sub{order:4;margin-bottom:0;}
+  .landing .hero-copy .hero-cta{order:5;margin-bottom:0;}
   .landing .hero-copy .proof{order:6;}
   .landing .why-cards{grid-template-columns:1fr;}
   .landing h1.hero-h{font-size:46px;} .landing h2.sec-h,.landing .feat h2,.landing .reserve-grid h2{font-size:34px;} .landing .cta h2{font-size:36px;}
