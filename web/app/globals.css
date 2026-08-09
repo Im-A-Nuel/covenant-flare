@@ -651,6 +651,18 @@ h1.ph{font-size:38px;margin:0 0 8px;}
   .mnav .wallet .wmeta{min-width:0;}
   .mnav .wallet .wmeta b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .mnav .wallet .wmeta small{display:none;}
+}
+@media(max-width:420px){
+  /* At this width the chip (dot + address + network badge) plus the brand
+     and burger button no longer all fit: the address was the one absorbing
+     the deficit, and text-overflow:ellipsis triggers on even a 1px overflow,
+     so "0x2222…0B25" (already shortAddr-truncated) was getting cut a second
+     time into "0x2222…0B…". Drop the redundant text badge here instead of
+     fighting for single pixels -- the green dot still signals connected, and
+     the full "Coston2 Testnet · Flare" label is one tap away in the popup. */
+  .mnav .wallet .wnet{display:none;}
+}
+@media(max-width:1000px){
   .mnav-burger{flex:0 0 auto;width:40px;height:40px;border:1px solid var(--line);border-radius:11px;background:#fff;
     display:flex;align-items:center;justify-content:center;color:var(--ink);}
   .mnav-burger:hover{background:#f6f6f4;}
